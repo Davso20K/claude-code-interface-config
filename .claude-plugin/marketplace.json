@@ -1,0 +1,7 @@
+{
+  "name": "my-mods",
+  "owner": { "name": "LENOVO" },
+  "plugins": [
+    { "name": "side-dashboard", "source": "./side-dashboard" }
+  ]
+}

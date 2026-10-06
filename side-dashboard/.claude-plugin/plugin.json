@@ -1,0 +1,6 @@
+{
+  "name": "side-dashboard",
+  "version": "0.1.0",
+  "description": "Panneau latéral automatique : tâches, tokens en contexte, modèle et coût.",
+  "types": "./types/index.d.ts"
+}
