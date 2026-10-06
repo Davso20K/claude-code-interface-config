@@ -279,7 +279,7 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Tes messages envoyés : un chevron puis le texte, sans cadre. Les autres origines
+  // Tes messages envoyés : le texte entre < >, sans cadre. Les autres origines
   // (notifications, autres agents) gardent le rendu du moteur.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const { text, origin } = e.props
@@ -291,14 +291,15 @@ export const register: Register = on => {
 
     return (
       <Box marginY={1}>
-        <Box flexShrink={0} width={ICON_COLS}>
+        <Text>
           <Text bold color={C.title}>
-            ❯
+            {'< '}
           </Text>
-        </Box>
-        <Box flexShrink={1}>
-          <Text>{text}</Text>
-        </Box>
+          {text}
+          <Text bold color={C.title}>
+            {' >'}
+          </Text>
+        </Text>
       </Box>
     )
   })
