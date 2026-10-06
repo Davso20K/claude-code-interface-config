@@ -290,7 +290,7 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
 
     return (
-      <Box>
+      <Box marginY={1}>
         <Box flexShrink={0} width={ICON_COLS}>
           <Text bold color={C.title}>
             ❯
