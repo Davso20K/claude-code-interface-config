@@ -1,0 +1,16 @@
+{
+  "_note": "Extrait des réglages à reporter dans ~/.claude/settings.json (fusionner à la main). Les chemins sont à adapter.",
+  "theme": "dark",
+  "enabledPlugins": {
+    "code-simplifier@claude-plugins-official": true,
+    "explanatory-output-style@claude-plugins-official": true,
+    "data-engineering@claude-plugins-official": true,
+    "mlflow@claude-plugins-official": false,
+    "side-dashboard@my-mods": true
+  },
+  "extraKnownMarketplaces": {
+    "my-mods": {
+      "source": { "source": "directory", "path": "C:\\Users\\<toi>\\.claude\\my-mods" }
+    }
+  }
+}
