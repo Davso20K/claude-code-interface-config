@@ -279,7 +279,7 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Tes messages envoyés : une carte à bords arrondis. Les autres origines
+  // Tes messages envoyés : un chevron puis le texte, sans cadre. Les autres origines
   // (notifications, autres agents) gardent le rendu du moteur.
   on('ui.render', { component: 'UserMessage' }, async ($, e, next) => {
     const { text, origin } = e.props
@@ -290,7 +290,7 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
 
     return (
-      <Box borderStyle="round" borderColor={C.border} paddingX={1}>
+      <Box>
         <Box flexShrink={0} width={ICON_COLS}>
           <Text bold color={C.title}>
             ❯
