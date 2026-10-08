@@ -256,6 +256,7 @@ export const register: Register = on => {
   // les travaux programmés (cron, réveil /loop) et sous-agents y figurent aussi.
   const short = (t: string, n = 48) => (t.length > n ? `${t.slice(0, n - 1)}…` : t)
   on('tool.call', async ($, e, next) => {
+    $.ui.toast(`DEBUG tool.call: ${e.tool}`) // TEMP diagnostic
     if (e.tool === 'TodoWrite') {
       const list = e.input.todos.map((t, i) => ({
         id: String(i),
@@ -554,7 +555,7 @@ export const register: Register = on => {
           </Box>,
         )}
         {card(
-          `☑  Tâches (${done}/${list.length})`,
+          `Tâches (${done}/${list.length})`,
           <Box flexDirection="column">
             {list.length === 0 && <Text color={C.dim}>Aucune tâche.</Text>}
             {list.slice(-room).map(x => (
