@@ -495,7 +495,7 @@ export const register: Register = on => {
     )
 
     return (
-      <Box flexDirection="column" gap={1} padding={1}>
+      <Box flexDirection="column" paddingX={1}>
         {card(
           'Contexte',
           <Box flexDirection="column">
@@ -551,7 +551,7 @@ export const register: Register = on => {
             {u.usd !== undefined && row('coût', `$${u.usd.toFixed(2)}`)}
             {row('session', dur(t.now - t.sessionStart))}
             {row(turnLabel, turnValue, t.turnStart !== undefined ? C.green : C.text)}
-            {k.name && row(k.isActive ? '✦ skill' : 'dernier skill', k.name, k.isActive ? C.green : C.dim)}
+            {k.name && row(k.isActive ? '✦ skill' : 'skill', k.name, k.isActive ? C.green : C.dim)}
           </Box>,
         )}
         {card(
