@@ -258,7 +258,7 @@ export const register: Register = on => {
   on('tool.call', async ($, e, next) => {
     $.ui.toast(`DEBUG tool.call: ${e.tool}`) // TEMP diagnostic
     if (e.tool === 'TodoWrite') {
-      const list = e.input.todos.map((t, i) => ({
+      const list = e.todos.map((t, i) => ({
         id: String(i),
         label: t.content,
         status: t.status,
@@ -267,12 +267,12 @@ export const register: Register = on => {
     } else if (e.tool === 'TaskCreate') {
       const task: DashTask = {
         id: `t${nextTaskId++}`,
-        label: e.input.subject,
+        label: e.subject,
         status: 'pending',
       }
       await update($, tasks, list => [...list, task])
     } else if (e.tool === 'TaskUpdate') {
-      const { taskId, status, subject } = e.input
+      const { taskId, status, subject } = e
       await update($, tasks, list =>
         status === 'deleted'
           ? list.filter(t => t.id !== taskId)
@@ -285,25 +285,25 @@ export const register: Register = on => {
     } else if (e.tool === 'CronCreate') {
       const task: DashTask = {
         id: `c${nextTaskId++}`,
-        label: `⏰ ${e.input.cron} · ${short(e.input.prompt)}`,
+        label: `⏰ ${e.cron} · ${short(e.prompt)}`,
         status: 'pending',
       }
       await update($, tasks, list => [...list, task])
     } else if (e.tool === 'ScheduleWakeup') {
       await update($, tasks, list => {
         const rest = list.filter(t => t.id !== 'wakeup')
-        if (e.input.stop) return rest
-        const mins = Math.round((e.input.delaySeconds ?? 0) / 60)
+        if (e.stop) return rest
+        const mins = Math.round((e.delaySeconds ?? 0) / 60)
         const task: DashTask = {
           id: 'wakeup',
-          label: `⏰ réveil dans ${mins} min · ${short(e.input.reason ?? 'boucle')}`,
+          label: `⏰ réveil dans ${mins} min · ${short(e.reason ?? 'boucle')}`,
           status: 'pending',
         }
         return [...rest, task]
       })
     } else if (e.tool === 'Agent') {
       const id = `a${nextTaskId++}`
-      const task: DashTask = { id, label: `🤖 ${short(e.input.description)}`, status: 'in_progress' }
+      const task: DashTask = { id, label: `🤖 ${short(e.description)}`, status: 'in_progress' }
       await update($, tasks, list => [...list, task])
       const result = await next(e)
       await update($, tasks, list => list.map(t => (t.id === id ? { ...t, status: 'completed' } : t)))
