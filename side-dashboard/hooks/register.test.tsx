@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-test('le panneau affiche contexte, session et tâches', async $ => {
+test('le panneau affiche contexte, limites et session', async $ => {
   const ui = await $.ui.mount({
     plugin: 'side-dashboard',
     surface: 'terminal',
@@ -10,7 +10,7 @@ test('le panneau affiche contexte, session et tâches', async $ => {
   })
 
   expect(await ui.find({ type: 'Text', text: /Contexte/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /Aucune tâche/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Limites/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -45,22 +45,5 @@ test('un message envoyé est dessiné dans une carte', async $ => {
   })
 
   expect(await ui.find({ type: 'Text', text: /bonjour le test/ })).toBeDefined()
-  await ui.unmount()
-})
-
-test('un sous-agent lancé apparaît dans les tâches puis passe à terminé', async ($, on) => {
-  on('tool.call', async () => ({ ref: 'x', result: 'ok', text: 'ok' }) as never)
-  await $.tool.call({ tool: 'Agent', description: 'Chercher le bug', prompt: 'cherche' } as never)
-
-  const ui = await $.ui.mount({
-    plugin: 'side-dashboard',
-    surface: 'terminal',
-    component: 'Pane',
-    requestId: 'side-dashboard',
-    props: { title: 'Dashboard', focused: false },
-  })
-
-  expect(await ui.find({ type: 'Text', text: /Chercher le bug/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /Tâches \(1\/1\)/ })).toBeDefined()
   await ui.unmount()
 })

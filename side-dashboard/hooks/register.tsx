@@ -1,10 +1,9 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { DashSkill, DashTask, DashTiming, DashUsage, DashWhere } from '../types'
+import type { DashSkill, DashTiming, DashUsage, DashWhere } from '../types'
 
 const PANE = 'side-dashboard'
-const tasks = atom({ plugin: 'side-dashboard', key: 'tasks' } as const, [] as DashTask[])
 const usage = atom(
   { plugin: 'side-dashboard', key: 'usage' } as const,
   { window: 0, model: '…', limits: [] } as DashUsage,
@@ -65,8 +64,6 @@ const C = {
 
 // Orange Claude (clé de thème), réservé au bandeau sous le prompt.
 const BANNER = 'claude'
-
-const ICON = { pending: '○', in_progress: '◐', completed: '●' } as const
 
 const fmt = (n?: number) =>
   n === undefined ? '–' : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
@@ -165,7 +162,6 @@ async function refreshWhere($: EngineInterface) {
 }
 
 export const register: Register = on => {
-  let nextTaskId = 1
   on('session.start', async ($, e, next) => {
     void $.ui.open({ id: PANE, title: 'Dashboard' })
 
@@ -248,68 +244,6 @@ export const register: Register = on => {
       usd: e.cost?.usd,
       limits: e.rateLimits.map(r => ({ kind: r.kind, percent: r.percentUsed, resetsAt: r.resetsAt })),
     }))
-
-    return next(e)
-  })
-
-  // Tâches : TodoWrite remplace la liste, TaskCreate/TaskUpdate la modifient ;
-  // les travaux programmés (cron, réveil /loop) et sous-agents y figurent aussi.
-  const short = (t: string, n = 48) => (t.length > n ? `${t.slice(0, n - 1)}…` : t)
-  on('tool.call', async ($, e, next) => {
-    $.ui.toast(`DEBUG tool.call: ${e.tool}`) // TEMP diagnostic
-    if (e.tool === 'TodoWrite') {
-      const list = e.todos.map((t, i) => ({
-        id: String(i),
-        label: t.content,
-        status: t.status,
-      }))
-      await update($, tasks, () => list)
-    } else if (e.tool === 'TaskCreate') {
-      const task: DashTask = {
-        id: `t${nextTaskId++}`,
-        label: e.subject,
-        status: 'pending',
-      }
-      await update($, tasks, list => [...list, task])
-    } else if (e.tool === 'TaskUpdate') {
-      const { taskId, status, subject } = e
-      await update($, tasks, list =>
-        status === 'deleted'
-          ? list.filter(t => t.id !== taskId)
-          : list.map(t =>
-              t.id === taskId
-                ? { ...t, status: status ?? t.status, label: subject ?? t.label }
-                : t,
-            ),
-      )
-    } else if (e.tool === 'CronCreate') {
-      const task: DashTask = {
-        id: `c${nextTaskId++}`,
-        label: `⏰ ${e.cron} · ${short(e.prompt)}`,
-        status: 'pending',
-      }
-      await update($, tasks, list => [...list, task])
-    } else if (e.tool === 'ScheduleWakeup') {
-      await update($, tasks, list => {
-        const rest = list.filter(t => t.id !== 'wakeup')
-        if (e.stop) return rest
-        const mins = Math.round((e.delaySeconds ?? 0) / 60)
-        const task: DashTask = {
-          id: 'wakeup',
-          label: `⏰ réveil dans ${mins} min · ${short(e.reason ?? 'boucle')}`,
-          status: 'pending',
-        }
-        return [...rest, task]
-      })
-    } else if (e.tool === 'Agent') {
-      const id = `a${nextTaskId++}`
-      const task: DashTask = { id, label: `🤖 ${short(e.description)}`, status: 'in_progress' }
-      await update($, tasks, list => [...list, task])
-      const result = await next(e)
-      await update($, tasks, list => list.map(t => (t.id === id ? { ...t, status: 'completed' } : t)))
-
-      return result
-    }
 
     return next(e)
   })
@@ -457,13 +391,10 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const { Box, Text } = $.ui.resolve(e)
-    const list = await read($, tasks)
     const u = await read($, usage)
-    const room = Math.max(1, (e.viewport?.rows ?? 24) - 24)
     const t = await read($, timing)
     const k = await read($, skill)
     const percent = u.percent ?? 0
-    const done = list.filter(x => x.status === 'completed').length
 
     const filledPill = pill(percent, BAR_WIDTH + 2)
     const turnLabel = t.turnStart !== undefined ? '⏱ tour en cours' : 'dernier tour'
@@ -552,27 +483,6 @@ export const register: Register = on => {
             {row('session', dur(t.now - t.sessionStart))}
             {row(turnLabel, turnValue, t.turnStart !== undefined ? C.green : C.text)}
             {k.name && row(k.isActive ? '✦ skill' : 'skill', k.name, k.isActive ? C.green : C.dim)}
-          </Box>,
-        )}
-        {card(
-          `Tâches (${done}/${list.length})`,
-          <Box flexDirection="column" marginTop={1}>
-            {list.length === 0 && <Text color={C.dim}>Aucune tâche.</Text>}
-            {list.slice(-room).map(x => {
-              const color =
-                x.status === 'completed' ? C.dim : x.status === 'in_progress' ? C.green : C.text
-
-              return (
-                <Box>
-                  <Box flexShrink={0} width={2}>
-                    <Text color={color}>{ICON[x.status]}</Text>
-                  </Box>
-                  <Box flexShrink={1}>
-                    <Text color={color}>{x.label}</Text>
-                  </Box>
-                </Box>
-              )
-            })}
           </Box>,
         )}
       </Box>

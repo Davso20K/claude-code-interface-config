@@ -5,7 +5,7 @@ Testé avec Claude Code **2.1.291** sous Windows 11.
 
 ## Ce que fait side-dashboard
 
-- **Panneau de droite** (carte Contexte, Limites 5h / 7j, Session, Tâches), ouvert au premier message.
+- **Panneau de droite** (carte Contexte, Limites 5h / 7j, Session), ouvert au premier message.
   Couleurs par clés de thème : il suit le thème de Claude Code.
 - **Bandeau sous le prompt** : branche git, dossier, chemin (via `PromptHint`).
 - **Réponses mises en forme** : titres avec icône, puces indentées, blocs Insight encadrés.
