@@ -324,16 +324,16 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
 
     return (
-      <Box marginY={1}>
-        <Text>
-          <Text bold color={C.accent}>
-            {'< '}
-          </Text>
-          {text}
-          <Text bold color={C.accent}>
-            {' >'}
-          </Text>
-        </Text>
+      <Box marginY={1} flexDirection="column">
+        {text.split('
+').map(line => (
+          <Box>
+            <Box flexShrink={0}>
+              <Text color={C.accent}>▎ </Text>
+            </Box>
+            <Text>{line}</Text>
+          </Box>
+        ))}
       </Box>
     )
   })
@@ -500,10 +500,10 @@ export const register: Register = on => {
           <Box flexDirection="column">
             <Box gap={2}>
               <Text>
-                <Text color={filledPill.filled > 0 ? C.green : C.track}>◖</Text>
-                <Text color={C.green}>{'▬'.repeat(filledPill.filled)}</Text>
+                <Text color={filledPill.filled > 0 ? C.accent : C.track}>◖</Text>
+                <Text color={C.accent}>{'▬'.repeat(filledPill.filled)}</Text>
                 <Text color={C.track}>{'▬'.repeat(filledPill.rest)}</Text>
-                <Text color={filledPill.isFull ? C.green : C.track}>◗</Text>
+                <Text color={filledPill.isFull ? C.accent : C.track}>◗</Text>
               </Text>
               <Text bold color={C.text}>
                 {Math.round(percent)}%
@@ -525,10 +525,10 @@ export const register: Register = on => {
                 <Box flexDirection="column">
                   <Box gap={2}>
                     <Text>
-                      <Text color={lp.filled > 0 ? C.green : C.track}>◖</Text>
-                      <Text color={C.green}>{'▬'.repeat(lp.filled)}</Text>
+                      <Text color={lp.filled > 0 ? C.accent : C.track}>◖</Text>
+                      <Text color={C.accent}>{'▬'.repeat(lp.filled)}</Text>
                       <Text color={C.track}>{'▬'.repeat(lp.rest)}</Text>
-                      <Text color={lp.isFull ? C.green : C.track}>◗</Text>
+                      <Text color={lp.isFull ? C.accent : C.track}>◗</Text>
                     </Text>
                     <Text bold color={C.text}>
                       {Math.round(l.percent)}%
