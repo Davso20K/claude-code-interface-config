@@ -325,8 +325,7 @@ export const register: Register = on => {
 
     return (
       <Box marginY={1} flexDirection="column">
-        {text.split('
-').map(line => (
+        {text.split(/\r?\n/).map(line => (
           <Box>
             <Box flexShrink={0}>
               <Text color={C.accent}>▎ </Text>
