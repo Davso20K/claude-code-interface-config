@@ -497,7 +497,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" gap={1} padding={1}>
         {card(
-          '◈  Contexte',
+          'Contexte',
           <Box flexDirection="column">
             <Box gap={2}>
               <Text>
@@ -516,7 +516,7 @@ export const register: Register = on => {
           </Box>,
         )}
         {card(
-          '⏳  Limites',
+          'Limites',
           <Box flexDirection="column">
             {u.limits.length === 0 && <Text color={C.dim}>Pas de donnée.</Text>}
             {u.limits.map(l => {
@@ -545,7 +545,7 @@ export const register: Register = on => {
           </Box>,
         )}
         {card(
-          '◷  Session',
+          'Session',
           <Box flexDirection="column">
             {row('modèle', u.model)}
             {u.usd !== undefined && row('coût', `$${u.usd.toFixed(2)}`)}
