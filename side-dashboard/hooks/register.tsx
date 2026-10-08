@@ -324,15 +324,16 @@ export const register: Register = on => {
     const { Box, Text } = $.ui.resolve(e)
 
     return (
-      <Box marginY={1} flexDirection="column">
-        {text.split(/\r?\n/).map(line => (
-          <Box>
-            <Box flexShrink={0}>
-              <Text color={C.accent}>▎ </Text>
-            </Box>
-            <Text>{line}</Text>
-          </Box>
-        ))}
+      <Box marginY={1}>
+        <Text>
+          <Text bold color={C.accent}>
+            {'[ '}
+          </Text>
+          {text}
+          <Text bold color={C.accent}>
+            {' ]'}
+          </Text>
+        </Text>
       </Box>
     )
   })
