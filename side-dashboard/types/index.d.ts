@@ -1,9 +1,3 @@
-export type DashTask = {
-  id: string
-  label: string
-  status: 'pending' | 'in_progress' | 'completed'
-}
-
 export type DashLimit = { kind: string; percent: number; resetsAt?: string }
 
 export type DashUsage = {
@@ -28,6 +22,6 @@ export type DashSkill = { name?: string; isActive: boolean }
 
 declare module 'claude-code' {
   interface PluginState {
-    'side-dashboard': { tasks: DashTask[]; usage: DashUsage; timing: DashTiming; where: DashWhere; skill: DashSkill }
+    'side-dashboard': { usage: DashUsage; timing: DashTiming; where: DashWhere; skill: DashSkill }
   }
 }
