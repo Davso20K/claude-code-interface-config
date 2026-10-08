@@ -62,6 +62,9 @@ const C = {
   track: 'subtle',
 } as const
 
+// Bleu lumineux fixe, réservé au bandeau sous le prompt.
+const BLUE = 'rgb(0,170,255)'
+
 const ICON = { pending: '○', in_progress: '◐', completed: '●' } as const
 
 const fmt = (n?: number) =>
@@ -161,6 +164,7 @@ async function refreshWhere($: EngineInterface) {
 }
 
 export const register: Register = on => {
+  let nextTaskId = 1
   on('session.start', async ($, e, next) => {
     void $.ui.open({ id: PANE, title: 'Dashboard' })
 
@@ -247,7 +251,9 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Tâches : TodoWrite remplace la liste, TaskCreate/TaskUpdate la modifient.
+  // Tâches : TodoWrite remplace la liste, TaskCreate/TaskUpdate la modifient ;
+  // les travaux programmés (cron, réveil /loop) et sous-agents y figurent aussi.
+  const short = (t: string, n = 48) => (t.length > n ? `${t.slice(0, n - 1)}…` : t)
   on('tool.call', async ($, e, next) => {
     if (e.tool === 'TodoWrite') {
       const list = e.input.todos.map((t, i) => ({
@@ -258,7 +264,7 @@ export const register: Register = on => {
       await update($, tasks, () => list)
     } else if (e.tool === 'TaskCreate') {
       const task: DashTask = {
-        id: String(nextTaskId++),
+        id: `t${nextTaskId++}`,
         label: e.input.subject,
         status: 'pending',
       }
@@ -274,6 +280,33 @@ export const register: Register = on => {
                 : t,
             ),
       )
+    } else if (e.tool === 'CronCreate') {
+      const task: DashTask = {
+        id: `c${nextTaskId++}`,
+        label: `⏰ ${e.input.cron} · ${short(e.input.prompt)}`,
+        status: 'pending',
+      }
+      await update($, tasks, list => [...list, task])
+    } else if (e.tool === 'ScheduleWakeup') {
+      await update($, tasks, list => {
+        const rest = list.filter(t => t.id !== 'wakeup')
+        if (e.input.stop) return rest
+        const mins = Math.round((e.input.delaySeconds ?? 0) / 60)
+        const task: DashTask = {
+          id: 'wakeup',
+          label: `⏰ réveil dans ${mins} min · ${short(e.input.reason ?? 'boucle')}`,
+          status: 'pending',
+        }
+        return [...rest, task]
+      })
+    } else if (e.tool === 'Agent') {
+      const id = `a${nextTaskId++}`
+      const task: DashTask = { id, label: `🤖 ${short(e.input.description)}`, status: 'in_progress' }
+      await update($, tasks, list => [...list, task])
+      const result = await next(e)
+      await update($, tasks, list => list.map(t => (t.id === id ? { ...t, status: 'completed' } : t)))
+
+      return result
     }
 
     return next(e)
@@ -396,9 +429,9 @@ export const register: Register = on => {
         marginTop={1}
         width={(e.viewport?.columns ?? 100) - 6}
       >
-        <Box borderStyle="round" borderColor={C.border} paddingX={1} gap={1} width="100%">
+        <Box borderStyle="round" borderColor={BLUE} paddingX={1} gap={1} width="100%">
           <Box flexShrink={0}>
-            <Text bold color={C.title} wrap="truncate">
+            <Text bold color={BLUE} wrap="truncate">
               ⎇ {w.branch ?? 'pas de git'}
             </Text>
           </Box>
