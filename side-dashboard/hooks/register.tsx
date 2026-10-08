@@ -499,10 +499,10 @@ export const register: Register = on => {
           <Box flexDirection="column">
             <Box gap={2}>
               <Text>
-                <Text color={filledPill.filled > 0 ? C.accent : C.track}>◖</Text>
-                <Text color={C.accent}>{'▬'.repeat(filledPill.filled)}</Text>
+                <Text color={filledPill.filled > 0 ? C.text : C.track}>◖</Text>
+                <Text color={C.text}>{'▬'.repeat(filledPill.filled)}</Text>
                 <Text color={C.track}>{'▬'.repeat(filledPill.rest)}</Text>
-                <Text color={filledPill.isFull ? C.accent : C.track}>◗</Text>
+                <Text color={filledPill.isFull ? C.text : C.track}>◗</Text>
               </Text>
               <Text bold color={C.text}>
                 {Math.round(percent)}%
@@ -524,10 +524,10 @@ export const register: Register = on => {
                 <Box flexDirection="column">
                   <Box gap={2}>
                     <Text>
-                      <Text color={lp.filled > 0 ? C.accent : C.track}>◖</Text>
-                      <Text color={C.accent}>{'▬'.repeat(lp.filled)}</Text>
+                      <Text color={lp.filled > 0 ? C.text : C.track}>◖</Text>
+                      <Text color={C.text}>{'▬'.repeat(lp.filled)}</Text>
                       <Text color={C.track}>{'▬'.repeat(lp.rest)}</Text>
-                      <Text color={lp.isFull ? C.accent : C.track}>◗</Text>
+                      <Text color={lp.isFull ? C.text : C.track}>◗</Text>
                     </Text>
                     <Text bold color={C.text}>
                       {Math.round(l.percent)}%
