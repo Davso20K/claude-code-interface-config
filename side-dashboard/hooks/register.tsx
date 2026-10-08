@@ -56,6 +56,7 @@ const dur = (ms: number) => {
 const C = {
   border: 'promptBorder',
   title: 'suggestion',
+  accent: 'claude',
   text: 'text',
   dim: 'inactive',
   green: 'success',
@@ -325,11 +326,11 @@ export const register: Register = on => {
     return (
       <Box marginY={1}>
         <Text>
-          <Text bold color={C.title}>
+          <Text bold color={C.accent}>
             {'< '}
           </Text>
           {text}
-          <Text bold color={C.title}>
+          <Text bold color={C.accent}>
             {' >'}
           </Text>
         </Text>
@@ -479,7 +480,7 @@ export const register: Register = on => {
         borderColor={C.border}
         paddingX={1}
       >
-        <Text bold color={C.title}>
+        <Text bold color={C.accent}>
           {title}
         </Text>
         {children}
