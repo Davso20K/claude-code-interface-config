@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { DashSkill, DashTiming, DashUsage, DashWhere } from '../types'
+import type { DashFile, DashSkill, DashTiming, DashUsage, DashWhere } from '../types'
 
 const PANE = 'side-dashboard'
 const usage = atom(
@@ -19,7 +19,13 @@ const where = atom(
   { cwd: '' } as DashWhere,
 )
 
+const files = atom(
+  { plugin: 'side-dashboard', key: 'files' } as const,
+  [] as DashFile[],
+)
+
 const skill = atom(
+
   { plugin: 'side-dashboard', key: 'skill' } as const,
   { isActive: false } as DashSkill,
 )
@@ -204,6 +210,22 @@ export const register: Register = on => {
 
     return next(e)
   })
+
+  // Fichiers touchés : les arguments de l'outil sont directement sur l'événement.
+  on('tool.call', async ($, e, next) => {
+    const hit =
+      e.tool === 'Read'
+        ? { path: e.file_path, action: 'lu' as const }
+        : e.tool === 'Edit' || e.tool === 'Write'
+          ? { path: e.file_path, action: 'modifié' as const }
+          : undefined
+    if (hit) {
+      await update($, files, list => [...list.filter(f => f.path !== hit.path), hit].slice(-30))
+    }
+
+    return next(e)
+  })
+
 
   on('turn.start', async ($, e, next) => {
     const now = await $.clock.now()
@@ -394,6 +416,7 @@ export const register: Register = on => {
     const u = await read($, usage)
     const t = await read($, timing)
     const k = await read($, skill)
+    const touched = (await read($, files)).slice(-6).reverse()
     const percent = u.percent ?? 0
 
     const filledPill = pill(percent, BAR_WIDTH + 2)
@@ -483,6 +506,24 @@ export const register: Register = on => {
             {row('session', dur(t.now - t.sessionStart))}
             {row(turnLabel, turnValue, t.turnStart !== undefined ? C.green : C.text)}
             {k.name && row(k.isActive ? '✦ skill' : 'skill', k.name, k.isActive ? C.green : C.dim)}
+          </Box>,
+        )}
+        {card(
+          'Fichiers touchés',
+          <Box flexDirection="column">
+            {touched.length === 0 && <Text color={C.dim}>Aucun fichier.</Text>}
+            {touched.map(f => (
+              <Box justifyContent="space-between" gap={1}>
+                <Box flexShrink={1} minWidth={0}>
+                  <Text color={C.text} wrap="truncate-start">
+                    {baseName(f.path)}
+                  </Text>
+                </Box>
+                <Box flexShrink={0}>
+                  <Text color={f.action === 'modifié' ? C.green : C.dim}>{f.action}</Text>
+                </Box>
+              </Box>
+            ))}
           </Box>,
         )}
       </Box>

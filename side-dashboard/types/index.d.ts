@@ -1,3 +1,5 @@
+export type DashFile = { path: string; action: 'lu' | 'modifié' }
+
 export type DashLimit = { kind: string; percent: number; resetsAt?: string }
 
 export type DashUsage = {
@@ -22,6 +24,6 @@ export type DashSkill = { name?: string; isActive: boolean }
 
 declare module 'claude-code' {
   interface PluginState {
-    'side-dashboard': { usage: DashUsage; timing: DashTiming; where: DashWhere; skill: DashSkill }
+    'side-dashboard': { files: DashFile[]; usage: DashUsage; timing: DashTiming; where: DashWhere; skill: DashSkill }
   }
 }
