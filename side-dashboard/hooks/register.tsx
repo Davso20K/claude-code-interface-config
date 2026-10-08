@@ -556,15 +556,23 @@ export const register: Register = on => {
         )}
         {card(
           `Tâches (${done}/${list.length})`,
-          <Box flexDirection="column">
+          <Box flexDirection="column" marginTop={1}>
             {list.length === 0 && <Text color={C.dim}>Aucune tâche.</Text>}
-            {list.slice(-room).map(x => (
-              <Text
-                color={x.status === 'completed' ? C.dim : x.status === 'in_progress' ? C.green : C.text}
-              >
-                {ICON[x.status]} {x.label}
-              </Text>
-            ))}
+            {list.slice(-room).map(x => {
+              const color =
+                x.status === 'completed' ? C.dim : x.status === 'in_progress' ? C.green : C.text
+
+              return (
+                <Box>
+                  <Box flexShrink={0} width={2}>
+                    <Text color={color}>{ICON[x.status]}</Text>
+                  </Box>
+                  <Box flexShrink={1}>
+                    <Text color={color}>{x.label}</Text>
+                  </Box>
+                </Box>
+              )
+            })}
           </Box>,
         )}
       </Box>
