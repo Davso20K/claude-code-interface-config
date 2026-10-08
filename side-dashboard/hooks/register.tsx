@@ -62,8 +62,8 @@ const C = {
   track: 'subtle',
 } as const
 
-// Bleu lumineux fixe, réservé au bandeau sous le prompt.
-const BLUE = 'rgb(0,170,255)'
+// Orange Claude (clé de thème), réservé au bandeau sous le prompt.
+const BANNER = 'claude'
 
 const ICON = { pending: '○', in_progress: '◐', completed: '●' } as const
 
@@ -429,9 +429,9 @@ export const register: Register = on => {
         marginTop={1}
         width={(e.viewport?.columns ?? 100) - 6}
       >
-        <Box borderStyle="round" borderColor={BLUE} paddingX={1} gap={1} width="100%">
+        <Box borderStyle="round" borderColor={BANNER} paddingX={1} gap={1} width="100%">
           <Box flexShrink={0}>
-            <Text bold color={BLUE} wrap="truncate">
+            <Text bold color={BANNER} wrap="truncate">
               ⎇ {w.branch ?? 'pas de git'}
             </Text>
           </Box>
