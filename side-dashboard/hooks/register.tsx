@@ -242,27 +242,42 @@ export const register: Register = on => {
     // Efface le texte de status line laissé par une version précédente du mod.
     $.ui.status(undefined)
 
-    await refreshWhere($)
+    // Dossier et horloge connus tout de suite : le bandeau et la durée s'affichent dès l'ouverture.
+    await update($, where, () => ({ cwd: e.cwd, branch: undefined }))
+    const t0 = await $.clock.now()
+    await update($, timing, t => ({ ...t, sessionStart: t0, now: t0 }))
+
+    // Le reste (branche git, chiffres du panneau) se charge en arrière-plan : un appel lent
+    // ne doit ni bloquer le démarrage de la session ni retarder l'affichage jusqu'au premier message.
+    void (async () => {
+      try {
+        await refreshWhere($)
+      } catch {
+        // le bandeau garde le dossier de départ
+      }
+
+      try {
+        const now = await $.session.usage()
+        const model = await $.session.model()
+        await update($, timing, t => ({ ...t, sessionStart: now.startedAt, now: now.startedAt }))
+        await update($, usage, () => ({
+          tokens: now.context.tokens,
+          window: now.context.window,
+          percent: now.context.percent,
+          model,
+          usd: now.cost?.usd,
+          limits: now.rateLimits.map(r => ({ kind: r.kind, percent: r.percentUsed, resetsAt: r.resetsAt })),
+        }))
+      } catch {
+        // le panneau se remplira à la fin du premier tour
+      }
+    })()
 
     // Chrono : un tick par seconde fait avancer la durée du tour et de la session.
-    const start = (await $.session.usage()).startedAt
-    await update($, timing, t => ({ ...t, sessionStart: start, now: start }))
     void $.clock.every(1000, async () => {
       const now = await $.clock.now()
       await update($, timing, t => ({ ...t, now }))
     })
-
-    // Valeurs initiales, sans attendre la fin du premier tour.
-    const now = await $.session.usage()
-    const model = await $.session.model()
-    await update($, usage, () => ({
-      tokens: now.context.tokens,
-      window: now.context.window,
-      percent: now.context.percent,
-      model,
-      usd: now.cost?.usd,
-      limits: now.rateLimits.map(r => ({ kind: r.kind, percent: r.percentUsed, resetsAt: r.resetsAt })),
-    }))
 
     return next(e)
   })
@@ -612,7 +627,7 @@ export const register: Register = on => {
           <Box flexDirection="column">
             {row('modèle', u.model)}
             {u.usd !== undefined && row('coût', `$${u.usd.toFixed(2)}`)}
-            {row('session', dur(t.now - t.sessionStart))}
+            {row('session', t.sessionStart > 0 ? dur(t.now - t.sessionStart) : '–')}
             {row(turnLabel, turnValue, t.turnStart !== undefined ? C.soft : C.text)}
             {k.name && row(k.isActive ? '✦ skill' : 'skill', k.name, k.isActive ? C.soft : C.dim)}
           </Box>,
