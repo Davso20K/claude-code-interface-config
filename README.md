@@ -8,7 +8,8 @@ Testé avec Claude Code **2.1.291** sous Windows 11.
 - **Panneau de droite** (carte Contexte, Limites 5h / 7j, Session, Fichiers touchés), ouvert au premier message.
   Couleurs par clés de thème : il suit le thème de Claude Code.
 - **Bandeau sous le prompt** : branche git, dossier, chemin (via `PromptHint`).
-- **Réponses mises en forme** : titres avec icône, puces indentées, blocs Insight encadrés.
+- **Réponses mises en forme** : titres avec icône ◆ en orange, puces indentées, blocs Insight encadrés, citations avec barre. Une ligne vide entre un titre et son contenu et quand le type de bloc change ; les puces d'une liste restent serrées. Tableaux et blocs de code gardent le rendu natif, au milieu du reste.
+- **Thème « Claude orange »** (`side-dashboard/themes/claude-orange.json`) : le thème sombre avec l'orange à la place du violet (autocomplétion `/`, fenêtres de choix). À choisir dans `/theme`.
   Les messages avec tableau ou bloc de code restent au rendu natif.
 - **Tes messages envoyés** dans une carte à bords arrondis (`UserMessage`).
 

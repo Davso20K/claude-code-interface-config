@@ -67,3 +67,32 @@ test('les fichiers lus et modifiés apparaissent dans le panneau', async ($, on)
   expect(await ui.find({ type: 'Text', text: /modifié/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('une réponse est aérée : paragraphe, citation, liste longue, code natif', async ($, on) => {
+  // Le moteur dessine lui-même les segments de code : on le simule.
+  on('ui.render', async (_$, e) => h('Text', {}, `natif:${(e.props as { text: string }).text}`) as never)
+  const text = [
+    '> ⚠️ **Point à formuler avec honnêteté.** Un agent dédié est prévu',
+    '> dans la roadmap mais pas encore construit.',
+    '',
+    'Ce qui existe déjà :',
+    '- **Le texte réglementaire est une source à part entière.** Le questionnaire demande s\'il existe un texte.',
+    '- **Des garde-fous ciblés.** Une signature électronique n\'est autorisée que si sa reconnaissance est établie.',
+    '',
+    '```ts',
+    'const x = 1',
+    '```',
+  ].join('\n')
+  const ui = await $.ui.mount({
+    plugin: 'side-dashboard',
+    surface: 'terminal',
+    component: 'AssistantMessage',
+    props: { text, isFirstOfReply: true },
+  })
+
+  expect(await ui.find({ type: 'Text', text: /pas encore construit/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Ce qui existe déjà/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Des garde-fous ciblés/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /natif:```ts/ })).toBeDefined()
+  await ui.unmount()
+})

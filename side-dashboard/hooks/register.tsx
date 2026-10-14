@@ -89,43 +89,85 @@ const pill = (percent: number, width: number) => {
 }
 
 // ── Mise en forme des réponses ──────────────────────────────────────────────
-type MdBlock =
+// `gap` : une ligne vide précédait le bloc dans le texte d'origine.
+type MdBlock = { gap?: boolean } & (
   | { k: 'heading'; text: string }
   | { k: 'bullet'; level: number; marker: string; text: string }
   | { k: 'para'; text: string }
+  | { k: 'quote'; text: string }
   | { k: 'insight'; items: MdBlock[] }
+  // Bloc de code ou tableau : dessiné par le moteur, segment par segment.
+  | { k: 'raw'; text: string }
+)
 
 const INSIGHT_START = /^`?★\s*Insight/
 const INSIGHT_END = /^`?[─-]{8,}`?$/
-
+const FENCE = /^\s*(```|~~~)/
+const TABLE_ROW = /^\s*\|/
 function parseMd(lines: string[]): MdBlock[] {
   const out: MdBlock[] = []
+  let gap = false
+  const push = (b: MdBlock) => {
+    out.push({ ...b, gap })
+    gap = false
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i]
     const line = raw.trim()
-    if (!line) continue
+    if (!line) {
+      gap = true
+      continue
+    }
+
+    const fence = FENCE.exec(raw)
+    if (fence) {
+      const seg = [raw]
+      for (i++; i < lines.length; i++) {
+        seg.push(lines[i])
+        if (lines[i].trim().startsWith(fence[1])) break
+      }
+      push({ k: 'raw', text: seg.join('\n') })
+      continue
+    }
+
+    if (TABLE_ROW.test(raw)) {
+      const seg = [raw]
+      while (i + 1 < lines.length && TABLE_ROW.test(lines[i + 1])) seg.push(lines[++i])
+      push({ k: 'raw', text: seg.join('\n') })
+      continue
+    }
 
     if (INSIGHT_START.test(line)) {
       const inner: string[] = []
       for (i++; i < lines.length && !INSIGHT_END.test(lines[i].trim()); i++) inner.push(lines[i])
-      out.push({ k: 'insight', items: parseMd(inner) })
+      push({ k: 'insight', items: parseMd(inner) })
       continue
     }
 
     const heading = /^#{1,4}\s+(.*)$/.exec(line) ?? /^\*\*([^*]+)\*\*:?$/.exec(line)
     if (heading) {
-      out.push({ k: 'heading', text: heading[1].trim() })
+      push({ k: 'heading', text: heading[1].trim() })
+      continue
+    }
+
+    const quote = /^>\s?(.*)$/.exec(line)
+    if (quote) {
+      const prev = out[out.length - 1]
+      // Les lignes d'une même citation se suivent : on les recolle.
+      if (prev?.k === 'quote' && !gap) prev.text += quote[1] ? ' ' + quote[1] : ''
+      else if (quote[1]) push({ k: 'quote', text: quote[1] })
       continue
     }
 
     const bullet = /^(\s*)([-*•]|\d+\.)\s+(.*)$/.exec(raw)
     if (bullet) {
       const marker = /^\d/.test(bullet[2]) ? bullet[2] : '•'
-      out.push({ k: 'bullet', level: Math.floor(bullet[1].length / 2), marker, text: bullet[3] })
+      push({ k: 'bullet', level: Math.floor(bullet[1].length / 2), marker, text: bullet[3] })
       continue
     }
 
-    out.push({ k: 'para', text: line })
+    push({ k: 'para', text: line })
   }
 
   return out
@@ -140,7 +182,7 @@ function spans(text: string): { t: string; kind: 'plain' | 'code' | 'bold' }[] {
       part.startsWith('`')
         ? { t: part.slice(1, -1), kind: 'code' as const }
         : part.startsWith('**')
-          ? { t: part.slice(2, -2), kind: 'bold' as const }
+          ? { t: part.slice(2, -2).replace(/`/g, ''), kind: 'bold' as const }
           : { t: part, kind: 'plain' as const },
     )
 }
@@ -148,9 +190,9 @@ function spans(text: string): { t: string; kind: 'plain' | 'code' | 'bold' }[] {
 function headingStyle(text: string): { icon: string; color: string } {
   if (/limite|attention|risque|savoir|vérifier|problème|erreur/i.test(text)) return { icon: '⚠', color: 'warning' }
   if (/fait|chang|ajout|résultat|réussi|terminé|ok\b/i.test(text)) return { icon: '✓', color: 'success' }
-  if (/insight/i.test(text)) return { icon: '💡', color: 'suggestion' }
+  if (/insight/i.test(text)) return { icon: '💡', color: C.accent }
 
-  return { icon: '▸', color: 'suggestion' }
+  return { icon: '◆', color: C.accent }
 }
 
 // Dossier et branche : relus au démarrage et après chaque tour (un `cd` ou un checkout les change).
@@ -295,21 +337,33 @@ export const register: Register = on => {
     )
   })
 
-  // Réponses : titres en couleur, listes alignées, blocs Insight dans un cadre.
-  // Tableaux et blocs de code restent au rendu natif du moteur.
+  // Réponses : titres en couleur, listes alignées et aérées, blocs Insight dans un cadre.
+  // Tableaux et blocs de code sont dessinés par le moteur, au milieu du reste.
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
     const text = e.props.text
-    if (e.props.isSummary || !text.trim() || /```|^\s*\|/m.test(text)) {
+    if (e.props.isSummary || !text.trim()) {
       return next(e)
+    }
+
+    const blocks = parseMd(text.split('\n'))
+    // Un message fait seulement de code ou de tableaux : rien à mettre en forme.
+    if (blocks.every(b => b.k === 'raw')) {
+      return next(e)
+    }
+
+    // Les segments natifs se demandent au moteur avant de dessiner.
+    const native = new Map<MdBlock, Awaited<ReturnType<typeof next>>>()
+    for (const b of blocks) {
+      if (b.k === 'raw') native.set(b, await next({ ...e, props: { ...e.props, text: b.text, isFirstOfReply: false } }))
     }
 
     const { Box, Text } = $.ui.resolve(e)
 
-    const inline = (raw: string) => (
-      <Text>
+    const inline = (raw: string, italic = false) => (
+      <Text italic={italic}>
         {spans(raw).map(sp =>
           sp.kind === 'code' ? (
-            <Text color={C.title}>{sp.t}</Text>
+            <Text color={C.accent}>{sp.t}</Text>
           ) : sp.kind === 'bold' ? (
             <Text bold>{sp.t}</Text>
           ) : (
@@ -319,12 +373,17 @@ export const register: Register = on => {
       </Text>
     )
 
-    const draw = (b: MdBlock, i: number, all: MdBlock[]) => {
+    const draw = (b: MdBlock, i: number, all: MdBlock[]): ReturnType<typeof inline> => {
+      const prev = all[i - 1]
+      // Une ligne vide avant un bloc s'il y en avait une dans le texte,
+      // ou s'il change de nature (titre puis liste, paragraphe puis liste...).
+      const spaced = !!prev && (!!b.gap || prev.k !== b.k)
+
       if (b.k === 'heading') {
         const st = headingStyle(b.text)
 
         return (
-          <Box marginTop={1}>
+          <Box marginTop={prev ? 1 : 0}>
             <Box flexShrink={0} width={ICON_COLS}>
               <Text color={st.color}>{st.icon}</Text>
             </Box>
@@ -335,19 +394,32 @@ export const register: Register = on => {
         )
       }
       if (b.k === 'bullet') {
+        // Les puces d'une même liste restent serrées, même séparées par une ligne vide.
+        const top = spaced && prev.k !== 'bullet'
+
         return (
-          <Box paddingLeft={ICON_COLS + b.level * 2}>
+          <Box marginTop={top ? 1 : 0} paddingLeft={ICON_COLS + b.level * 2}>
             <Box flexShrink={0}>
-              <Text color={C.dim}>{b.marker} </Text>
+              <Text color={C.dim}>{b.marker}  </Text>
             </Box>
             <Box flexShrink={1}>{inline(b.text)}</Box>
+          </Box>
+        )
+      }
+      if (b.k === 'quote') {
+        return (
+          <Box marginTop={spaced ? 1 : 0}>
+            <Box flexShrink={0} width={2}>
+              <Text color={C.dim}>│</Text>
+            </Box>
+            <Box flexShrink={1}>{inline(b.text, true)}</Box>
           </Box>
         )
       }
       if (b.k === 'insight') {
         return (
           <Box
-            marginTop={1}
+            marginTop={prev ? 1 : 0}
             flexDirection="column"
             borderStyle="round"
             borderColor={C.border}
@@ -355,23 +427,24 @@ export const register: Register = on => {
           >
             <Box>
               <Box flexShrink={0} width={ICON_COLS}>
-                <Text color={C.title}>💡</Text>
+                <Text color={C.accent}>💡</Text>
               </Box>
-              <Text bold color={C.title}>
+              <Text bold color={C.accent}>
                 Insight
               </Text>
             </Box>
-            {b.items.map(draw)}
+            {b.items.map((x, j, xs) => draw(x, j, xs))}
           </Box>
         )
       }
+      if (b.k === 'raw') {
+        return <Box marginTop={prev ? 1 : 0}>{native.get(b)}</Box>
+      }
 
-      const prev = all[i - 1]
-
-      return prev && prev.k !== 'para' ? <Box marginTop={1}>{inline(b.text)}</Box> : inline(b.text)
+      return spaced ? <Box marginTop={1}>{inline(b.text)}</Box> : inline(b.text)
     }
 
-    return <Box flexDirection="column">{parseMd(text.split('\n')).map(draw)}</Box>
+    return <Box flexDirection="column">{blocks.map((b, i) => draw(b, i, blocks))}</Box>
   })
 
   // Bandeau sous le prompt, pleine largeur, calé à gauche.
