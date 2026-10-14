@@ -64,12 +64,21 @@ const C = {
   accent: 'claude',
   text: 'text',
   dim: 'inactive',
-  green: 'success',
+  // Crème ivoire : second neutre chaud (le vert et le sable ne plaisaient pas). Même valeur que `suggestion` dans le thème.
+  soft: '#f3ead8',
   track: 'subtle',
 } as const
 
-// Orange Claude (clé de thème), réservé au bandeau sous le prompt.
-const BANNER = 'claude'
+// Bandeau du bas : sans contour, branche en crème ivoire comme « auto mode on » (clé `warning` du thème).
+const BRANCH = C.soft
+
+// Réponses : orange Claude pour les titres et les crochets, neutres pour le reste ; `code` en pastille sombre.
+const R = {
+  heading: C.accent,
+  icon: 'inactive',
+  code: C.soft,
+  codeBg: '#2f2f2f',
+} as const
 
 const fmt = (n?: number) =>
   n === undefined ? '–' : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
@@ -187,12 +196,29 @@ function spans(text: string): { t: string; kind: 'plain' | 'code' | 'bold' }[] {
     )
 }
 
-function headingStyle(text: string): { icon: string; color: string } {
-  if (/limite|attention|risque|savoir|vérifier|problème|erreur/i.test(text)) return { icon: '⚠', color: 'warning' }
-  if (/fait|chang|ajout|résultat|réussi|terminé|ok\b/i.test(text)) return { icon: '✓', color: 'success' }
-  if (/insight/i.test(text)) return { icon: '💡', color: C.accent }
+// Puce numérotée dont le texte s'ouvre sur un **titre en gras** : elle joue le rôle de titre, son numéro devient un disque.
+function discMarker(marker: string, text: string): string | undefined {
+  const m = /^(\d{1,2})\.$/.exec(marker)
+  if (!m || +m[1] < 1 || +m[1] > DISC.length || !/^\*\*[^*]+\*\*/.test(text)) return undefined
 
-  return { icon: '◆', color: C.accent }
+  return DISC[+m[1] - 1]
+}
+
+// Titre numéroté (« 5. Évaluation ») : le numéro devient un disque plein ❺ à la place de l'icône.
+const DISC = ['❶', '❷', '❸', '❹', '❺', '❻', '❼', '❽', '❾', '❿']
+function numberedHeading(text: string): { disc: string; title: string } | undefined {
+  const m = /^(\d{1,2})[.)]\s+(.+)$/.exec(text)
+  if (!m || +m[1] < 1 || +m[1] > DISC.length) return undefined
+
+  return { disc: DISC[+m[1] - 1], title: m[2] }
+}
+
+function headingStyle(text: string): { icon: string; color: string } {
+  if (/limite|attention|risque|savoir|vérifier|problème|erreur/i.test(text)) return { icon: '⚠', color: '#f2c94c' }
+  if (/fait|chang|ajout|résultat|réussi|terminé|ok\b/i.test(text)) return { icon: '✓', color: C.accent }
+  if (/insight/i.test(text)) return { icon: '💡', color: R.icon }
+
+  return { icon: '◆', color: R.icon }
 }
 
 // Dossier et branche : relus au démarrage et après chaque tour (un `cd` ou un checkout les change).
@@ -325,11 +351,11 @@ export const register: Register = on => {
     return (
       <Box marginY={1}>
         <Text>
-          <Text bold color={C.accent}>
+          <Text color={R.heading}>
             {'[ '}
           </Text>
           {text}
-          <Text bold color={C.accent}>
+          <Text color={R.heading}>
             {' ]'}
           </Text>
         </Text>
@@ -363,7 +389,9 @@ export const register: Register = on => {
       <Text italic={italic}>
         {spans(raw).map(sp =>
           sp.kind === 'code' ? (
-            <Text color={C.accent}>{sp.t}</Text>
+            <Text color={R.code} backgroundColor={R.codeBg}>
+              {` ${sp.t} `}
+            </Text>
           ) : sp.kind === 'bold' ? (
             <Text bold>{sp.t}</Text>
           ) : (
@@ -380,27 +408,35 @@ export const register: Register = on => {
       const spaced = !!prev && (!!b.gap || prev.k !== b.k)
 
       if (b.k === 'heading') {
-        const st = headingStyle(b.text)
+        const num = numberedHeading(b.text)
+        const st = num ? { icon: num.disc, color: C.accent } : headingStyle(b.text)
 
         return (
           <Box marginTop={prev ? 1 : 0}>
             <Box flexShrink={0} width={ICON_COLS}>
               <Text color={st.color}>{st.icon}</Text>
             </Box>
-            <Text bold color={st.color}>
-              {b.text}
+            <Text color={R.heading}>
+              {num ? num.title : b.text}
             </Text>
           </Box>
         )
       }
       if (b.k === 'bullet') {
         // Les puces d'une même liste restent serrées, même séparées par une ligne vide.
-        const top = spaced && prev.k !== 'bullet'
+        // Exception : les puces à disque jouent le rôle de titres, longues et sur plusieurs lignes : on les sépare.
+        const isTitle = !!discMarker(b.marker, b.text)
+        const prevIsTitle = prev?.k === 'bullet' && !!discMarker(prev.marker, prev.text)
+        const top = (spaced && prev.k !== 'bullet') || (isTitle && prevIsTitle)
 
         return (
           <Box marginTop={top ? 1 : 0} paddingLeft={ICON_COLS + b.level * 2}>
             <Box flexShrink={0}>
-              <Text color={C.dim}>{b.marker}  </Text>
+              {(() => {
+                const disc = discMarker(b.marker, b.text)
+
+                return disc ? <Text color={C.accent}>{disc}  </Text> : <Text color={C.dim}>{b.marker}  </Text>
+              })()}
             </Box>
             <Box flexShrink={1}>{inline(b.text)}</Box>
           </Box>
@@ -427,9 +463,9 @@ export const register: Register = on => {
           >
             <Box>
               <Box flexShrink={0} width={ICON_COLS}>
-                <Text color={C.accent}>💡</Text>
+                <Text>💡</Text>
               </Box>
-              <Text bold color={C.accent}>
+              <Text color={R.heading}>
                 Insight
               </Text>
             </Box>
@@ -460,9 +496,9 @@ export const register: Register = on => {
         marginTop={1}
         width={(e.viewport?.columns ?? 100) - 6}
       >
-        <Box borderStyle="round" borderColor={BANNER} paddingX={1} gap={1} width="100%">
+        <Box paddingX={2} gap={1} width="100%">
           <Box flexShrink={0}>
-            <Text bold color={BANNER} wrap="truncate">
+            <Text bold color={BRANCH} wrap="truncate">
               ⎇ {w.branch ?? 'pas de git'}
             </Text>
           </Box>
@@ -577,8 +613,8 @@ export const register: Register = on => {
             {row('modèle', u.model)}
             {u.usd !== undefined && row('coût', `$${u.usd.toFixed(2)}`)}
             {row('session', dur(t.now - t.sessionStart))}
-            {row(turnLabel, turnValue, t.turnStart !== undefined ? C.green : C.text)}
-            {k.name && row(k.isActive ? '✦ skill' : 'skill', k.name, k.isActive ? C.green : C.dim)}
+            {row(turnLabel, turnValue, t.turnStart !== undefined ? C.soft : C.text)}
+            {k.name && row(k.isActive ? '✦ skill' : 'skill', k.name, k.isActive ? C.soft : C.dim)}
           </Box>,
         )}
         {card(
@@ -593,7 +629,7 @@ export const register: Register = on => {
                   </Text>
                 </Box>
                 <Box flexShrink={0}>
-                  <Text color={f.action === 'modifié' ? C.green : C.dim}>{f.action}</Text>
+                  <Text color={f.action === 'modifié' ? C.soft : C.dim}>{f.action}</Text>
                 </Box>
               </Box>
             ))}

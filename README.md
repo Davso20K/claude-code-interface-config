@@ -7,10 +7,15 @@ Testé avec Claude Code **2.1.291** sous Windows 11.
 
 - **Panneau de droite** (carte Contexte, Limites 5h / 7j, Session, Fichiers touchés), ouvert au premier message.
   Couleurs par clés de thème : il suit le thème de Claude Code.
-- **Bandeau sous le prompt** : branche git, dossier, chemin (via `PromptHint`).
-- **Réponses mises en forme** : titres avec icône ◆ en orange, puces indentées, blocs Insight encadrés, citations avec barre. Une ligne vide entre un titre et son contenu et quand le type de bloc change ; les puces d'une liste restent serrées. Tableaux et blocs de code gardent le rendu natif, au milieu du reste.
-- **Thème « Claude orange »** (`side-dashboard/themes/claude-orange.json`) : le thème sombre avec l'orange à la place du violet (autocomplétion `/`, fenêtres de choix). À choisir dans `/theme`.
-  Les messages avec tableau ou bloc de code restent au rendu natif.
+- **Bandeau sous le prompt**, sans contour : branche git, dossier, chemin (via `PromptHint`).
+- **Réponses mises en forme**, palette épurée (un seul accent, l'orange Claude) :
+  titres en orange sans gras avec un ◆ gris ; titres numérotés (`## 5. …`) et puces numérotées qui s'ouvrent sur un **titre en gras**
+  avec le numéro dans un disque plein orange ❶ ❷ … ❿ ; puces ordinaires serrées, puces à disque séparées par une ligne vide ;
+  `code` en ligne en pastille sombre ; citations avec barre ; blocs Insight encadrés.
+  Une ligne vide entre un titre et son contenu et quand le type de bloc change.
+  Tableaux et blocs de code gardent le rendu natif, au milieu du reste.
+- **Thème « Claude orange »** (`themes/claude-orange.json`) : le thème sombre sans le violet (autocomplétion `/`, fenêtres de choix, `code` des tableaux),
+  avec « auto mode on » en crème. Il doit être dans `~/.claude/themes/` : `setup.ps1` l'y copie, puis `/theme` ou `"theme": "custom:claude-orange"`.
 - **Tes messages envoyés** dans une carte à bords arrondis (`UserMessage`).
 
 ## Installer sur une nouvelle machine
@@ -46,7 +51,7 @@ Redémarrer Claude Code ensuite. Modifier le mod : éditer
 
 ## Réglages hors mod (voir settings-snippet.json)
 
-- `theme` : `dark`.
+- `theme` : `custom:claude-orange` (voir plus haut).
 - Plugins officiels activés : `code-simplifier`, `explanatory-output-style`, `data-engineering`.
 - Plugin **mlflow désactivé** : son hook `UserPromptSubmit` lance un script `.py` avec `python3`,
   qui n'existe pas sous Windows (seul le raccourci du Microsoft Store répond, avec « Python was not found »).

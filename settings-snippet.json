@@ -1,6 +1,6 @@
 {
   "_note": "Extrait des réglages à reporter dans ~/.claude/settings.json (fusionner à la main). Les chemins sont à adapter.",
-  "theme": "dark",
+  "theme": "custom:claude-orange",
   "enabledPlugins": {
     "code-simplifier@claude-plugins-official": true,
     "explanatory-output-style@claude-plugins-official": true,

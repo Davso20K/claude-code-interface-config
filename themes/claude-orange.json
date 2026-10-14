@@ -1,0 +1,11 @@
+{
+  "name": "Claude orange",
+  "base": "dark",
+  "overrides": {
+    "suggestion": "#f3ead8",
+    "permission": "#e3a083",
+    "permissionShimmer": "#f0c4ae",
+    "warning": "#f3ead8",
+    "warningShimmer": "#faf5ea"
+  }
+}

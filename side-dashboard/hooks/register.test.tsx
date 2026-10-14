@@ -96,3 +96,32 @@ test('une réponse est aérée : paragraphe, citation, liste longue, code natif'
   expect(await ui.find({ type: 'Text', text: /natif:```ts/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('un titre numéroté prend un disque plein, ses puces gardent leur numéro', async $ => {
+  const ui = await $.ui.mount({
+    plugin: 'side-dashboard',
+    surface: 'terminal',
+    component: 'AssistantMessage',
+    props: { text: '## 5. Utiliser les LLM\n\n1. premier point\n2. second point', isFirstOfReply: true },
+  })
+
+  expect(await ui.find({ type: 'Text', text: /❺/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Utiliser les LLM/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /1\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('une puce numérotée qui s’ouvre sur un titre en gras prend un disque, pas une puce simple', async $ => {
+  const ui = await $.ui.mount({
+    plugin: 'side-dashboard',
+    surface: 'terminal',
+    component: 'AssistantMessage',
+    props: { text: '1. **Définir ton objectif** : web, mobile\n2. **Choisir un langage** : Python\n\n1. une simple étape', isFirstOfReply: true },
+  })
+
+  expect(await ui.find({ type: 'Text', text: /❶/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /❷/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Définir ton objectif/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^1\./ })).toBeDefined()
+  await ui.unmount()
+})
