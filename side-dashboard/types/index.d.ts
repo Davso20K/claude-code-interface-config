@@ -7,6 +7,7 @@ export type DashUsage = {
   window: number
   percent?: number
   model: string
+  effort?: string
   usd?: number
   limits: DashLimit[]
 }

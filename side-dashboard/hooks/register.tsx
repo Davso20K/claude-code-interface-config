@@ -235,6 +235,22 @@ async function refreshWhere($: EngineInterface) {
   await update($, where, () => ({ cwd, branch }))
 }
 
+// Effort connu avant la première requête : variable d'environnement, puis réglage
+// du modèle (`modelSettings`), puis réglage global. turn.step le remplace ensuite.
+async function startEffort($: EngineInterface, model: string): Promise<string | undefined> {
+  const fromEnv = await $.env.get('CLAUDE_CODE_EFFORT_LEVEL')
+  if (fromEnv) {
+    return fromEnv
+  }
+
+  const perModel = (await $.settings.read({ key: 'modelSettings' })) as
+    | Record<string, { effortLevel?: string } | undefined>
+    | undefined
+  const global = (await $.settings.read({ key: 'effortLevel' })) as string | undefined
+
+  return perModel?.[model]?.effortLevel ?? global
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     void $.ui.open({ id: PANE, title: 'Dashboard' })
@@ -259,8 +275,12 @@ export const register: Register = on => {
       try {
         const now = await $.session.usage()
         const model = await $.session.model()
+        const effort = await startEffort($, model)
         await update($, timing, t => ({ ...t, sessionStart: now.startedAt, now: now.startedAt }))
-        await update($, usage, () => ({
+        await update($, usage, u => ({
+          ...u,
+          // turn.step a pu passer avant : sa valeur (l'effort réellement envoyé) prime.
+          effort: u.effort ?? effort,
           tokens: now.context.tokens,
           window: now.context.window,
           percent: now.context.percent,
@@ -341,7 +361,8 @@ export const register: Register = on => {
   // Tokens, coût et modèle : poussés par le moteur après chaque tour.
   on('session.measure', async ($, e, next) => {
     const model = await $.session.model()
-    await update($, usage, () => ({
+    await update($, usage, u => ({
+      ...u,
       tokens: e.context.tokens,
       window: e.context.window,
       percent: e.context.percent,
@@ -351,6 +372,19 @@ export const register: Register = on => {
     }))
 
     return next(e)
+  })
+
+  // Effort : lu sur chaque requête de la boucle principale (les sous-agents ont le leur).
+  on('turn.step', async function* ($, e, next) {
+    if (e.agentId === undefined) {
+      const effort = e.effort === undefined ? undefined : String(e.effort)
+      const u = await read($, usage)
+      if (u.effort !== effort) {
+        await update($, usage, x => ({ ...x, effort }))
+      }
+    }
+
+    return yield* next(e)
   })
 
   // Tes messages envoyés : le texte entre < >, sans cadre. Les autres origines
@@ -626,6 +660,7 @@ export const register: Register = on => {
           'Session',
           <Box flexDirection="column">
             {row('modèle', u.model)}
+            {row('effort', u.effort ?? '–', u.effort ? C.soft : C.dim)}
             {u.usd !== undefined && row('coût', `$${u.usd.toFixed(2)}`)}
             {row('session', t.sessionStart > 0 ? dur(t.now - t.sessionStart) : '–')}
             {row(turnLabel, turnValue, t.turnStart !== undefined ? C.soft : C.text)}
