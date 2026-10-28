@@ -3,6 +3,10 @@
 Marketplace locale contenant le mod **side-dashboard** et les réglages associés.
 Testé avec Claude Code **2.1.291** sous Windows 11.
 
+![Claude Code avec side-dashboard : réponse mise en forme à gauche, panneau Contexte / Limites / Session / Fichiers touchés à droite, bandeau sous le prompt](docs/apercu.png)
+
+*Le texte de la conversation et le chemin du dossier sont floutés volontairement.*
+
 ## Ce que fait side-dashboard
 
 - **Panneau de droite** (carte Contexte, Limites 5h / 7j, Session, Fichiers touchés), ouvert au premier message.
