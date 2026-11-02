@@ -632,7 +632,7 @@ export const register: Register = on => {
           <Box flexDirection="column">
             {u.limits.length === 0 && <Text color={C.dim}>Pas de donnée.</Text>}
             {u.limits.map(l => {
-              const lp = pill(l.percent, BAR_WIDTH + 2)
+              const lp = pill(l.percent, BAR_WIDTH - 2)
               const ms = l.resetsAt ? Date.parse(l.resetsAt) - t.now : NaN
               return (
                 <Box flexDirection="column">
@@ -644,7 +644,7 @@ export const register: Register = on => {
                       <Text color={lp.isFull ? C.text : C.track}>◗</Text>
                     </Text>
                     <Text bold color={C.text}>
-                      {Math.round(l.percent)}%
+                      {l.percent.toFixed(1).replace('.', ',')}%
                     </Text>
                   </Box>
                   <Text color={C.dim}>
