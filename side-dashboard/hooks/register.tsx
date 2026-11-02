@@ -631,11 +631,11 @@ export const register: Register = on => {
           'Limites',
           <Box flexDirection="column">
             {u.limits.length === 0 && <Text color={C.dim}>Pas de donnée.</Text>}
-            {u.limits.map(l => {
-              const lp = pill(l.percent, BAR_WIDTH - 2)
+            {u.limits.map((l, i) => {
+              const lp = pill(l.percent, BAR_WIDTH)
               const ms = l.resetsAt ? Date.parse(l.resetsAt) - t.now : NaN
               return (
-                <Box flexDirection="column">
+                <Box flexDirection="column" marginTop={i === 0 ? 0 : 1}>
                   <Box gap={2}>
                     <Text>
                       <Text color={lp.filled > 0 ? C.text : C.track}>◖</Text>
