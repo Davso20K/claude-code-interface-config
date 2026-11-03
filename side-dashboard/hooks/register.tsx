@@ -644,7 +644,7 @@ export const register: Register = on => {
                       <Text color={lp.isFull ? C.text : C.track}>◗</Text>
                     </Text>
                     <Text bold color={C.text}>
-                      {l.percent.toFixed(1).replace('.', ',')}%
+                      {String(l.percent).replace('.', ',')}%
                     </Text>
                   </Box>
                   <Text color={C.dim}>

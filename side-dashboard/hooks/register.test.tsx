@@ -14,6 +14,34 @@ test('le panneau affiche contexte, limites et session', async $ => {
   await ui.unmount()
 })
 
+test('une limite entière s’affiche sans « ,0 », une limite décimale garde sa décimale', async ($, on) => {
+  on('state.get', { key: 'usage' }, () => ({
+    value: {
+      value: {
+        window: 0,
+        model: 'm',
+        limits: [
+          { kind: 'five_hour', percent: 16 },
+          { kind: 'seven_day', percent: 23.5 },
+        ],
+      },
+      version: 1,
+    },
+  }))
+
+  const ui = await $.ui.mount({
+    plugin: 'side-dashboard',
+    surface: 'terminal',
+    component: 'Pane',
+    requestId: 'side-dashboard',
+    props: { title: 'Dashboard', focused: false },
+  })
+
+  expect((await ui.find({ type: 'Text', text: /^16(,0)?%$/ }))?.text).toBe('16%')
+  expect((await ui.find({ type: 'Text', text: /^23,5%$/ }))?.text).toBe('23,5%')
+  await ui.unmount()
+})
+
 test('une réponse est mise en forme : titre, puce, bloc Insight', async $ => {
   const text = [
     '**Ce qui change**',
